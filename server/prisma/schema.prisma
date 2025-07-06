@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String     @id @default(uuid())
+  name      String
+  createdAt DateTime   @default(now())
+  employees Employee[]
+  kiosks    Kiosk[]
+}
+
+model Employee {
+  id          String       @id @default(uuid())
+  firstName   String
+  lastName    String
+  position    String
+  role        Role
+  email       String       @unique
+  companyId   String
+  createdAt   DateTime     @default(now())
+  company     Company      @relation(fields: [companyId], references: [id])
+  kiosks      Kiosk[]
+  shifts      Shift[]
+  attendances Attendance[]
+}
+
+model Kiosk {
+  id               String       @id @default(uuid())
+  name             String
+  approvedByUserId String?
+  deviceId         String       @unique
+  companyId        String
+  createdAt        DateTime     @default(now())
+  attendances      Attendance[]
+  company          Company      @relation(fields: [companyId], references: [id])
+  approvedByUser   Employee?    @relation(fields: [approvedByUserId], references: [id])
+}
+
+model Shift {
+  id         String   @id @default(uuid())
+  employeeId String
+  startsAt   DateTime
+  endsAt     DateTime
+  createdAt  DateTime @default(now())
+  employee   Employee @relation(fields: [employeeId], references: [id])
+}
+
+model Attendance {
+  id            String         @id @default(uuid())
+  employeeId    String
+  kioskId       String
+  createdAt     DateTime       @default(now())
+  type          AttendanceType
+  locationLat   Float?
+  locationLng   Float?
+  photoUrl      String?
+  videoUrl      String?
+  kiosk         Kiosk          @relation(fields: [kioskId], references: [id])
+  employee      Employee       @relation(fields: [employeeId], references: [id])
+}
+
+enum AttendanceType {
+  IN
+  OUT
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}

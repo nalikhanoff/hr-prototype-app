@@ -1,0 +1,55 @@
+version: "3.3"
+
+name: hr-app
+
+networks:
+  hr-app:
+    name: hr-app
+
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hradmin
+      POSTGRES_PASSWORD: supersecretpassword
+      POSTGRES_DB: hr-app
+    ports:
+      - "5433:5432"
+    networks:
+      - hr-app
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    working_dir: /app/server
+    volumes:
+      - ./server:/app/server
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://hradmin:supersecretpassword@postgres:5432/hr-app
+    depends_on:
+      - postgres
+    networks:
+      - hr-app
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    working_dir: /app/client
+    volumes:
+      - ./client:/app/client
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_SERVER_URL=http://localhost:3000
+    depends_on:
+      - server
+    networks:
+      - hr-app
